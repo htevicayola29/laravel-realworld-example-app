@@ -2,56 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
-use Auth;
-use App\User;
-use App\Http\Requests\Api\LoginUser;
-use App\Http\Requests\Api\RegisterUser;
-use App\RealWorld\Transformers\UserTransformer;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 
-class AuthController extends ApiController
+class AuthController extends Controller
 {
-    /**
-     * AuthController constructor.
-     *
-     * @param UserTransformer $transformer
-     */
-    public function __construct(UserTransformer $transformer)
+    public function login(Request $request)
     {
-        $this->transformer = $transformer;
-    }
+        $credentials = $request->only('email', 'password');
 
-    /**
-     * Login user and return the user if successful.
-     *
-     * @param LoginUser $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function login(LoginUser $request)
-    {
-        $credentials = $request->only('user.email', 'user.password');
-        $credentials = $credentials['user'];
-
-        if (! Auth::once($credentials)) {
-            return $this->respondFailedLogin();
+        if (!$token = auth('api')->attempt($credentials)) {
+            return response()->json([
+                'error' => 'Unauthorized'
+            ], 401);
         }
 
-        return $this->respondWithTransformer(auth()->user());
-    }
-
-    /**
-     * Register a new user and return the user if successful.
-     *
-     * @param RegisterUser $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function register(RegisterUser $request)
-    {
-        $user = User::create([
-            'username' => $request->input('user.username'),
-            'email' => $request->input('user.email'),
-            'password' => bcrypt($request->input('user.password')),
+        return response()->json([
+            'token' => $token,
+            'user' => auth('api')->user()
         ]);
-
-        return $this->respondWithTransformer($user);
     }
 }

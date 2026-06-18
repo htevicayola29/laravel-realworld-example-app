@@ -7,54 +7,43 @@ use App\RealWorld\Favorite\HasFavorite;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class User extends Authenticatable implements JWTSubject
 {
     use Notifiable, Followable, HasFavorite;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
+     * Mass assignable fields
      */
     protected $fillable = [
-        'username', 'email', 'password', 'bio', 'image'
+        'username',
+        'email',
+        'password',
+        'bio',
+        'image'
     ];
 
     /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
+     * Hidden fields for arrays / JSON
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
     /**
-     * Set the password using bcrypt hash.
-     *
-     * @param $value
+     * Auto-hash password
      */
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password'] = (password_get_info($value)['algo'] === 0) ? bcrypt($value) : $value;
+        $this->attributes['password'] =
+            (password_get_info($value)['algo'] === 0)
+            ? bcrypt($value)
+            : $value;
     }
 
     /**
-     * Generate a JWT token for the user.
-     *
-     * @return string
-     */
-    public function getTokenAttribute()
-    {
-        return JWTAuth::fromUser($this);
-    }
-
-    /**
-     * Get all the articles by the user.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * RELATION: Articles
      */
     public function articles()
     {
@@ -62,9 +51,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get all the comments by the user.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * RELATION: Comments
      */
     public function comments()
     {
@@ -72,21 +59,18 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get all the articles of the following users.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * FEED: Articles from followed users
      */
     public function feed()
     {
         $followingIds = $this->following()->pluck('id')->toArray();
 
-        return Article::loadRelations()->whereIn('user_id', $followingIds);
+        return Article::loadRelations()
+            ->whereIn('user_id', $followingIds);
     }
 
     /**
-     * Get the key name for route model binding.
-     *
-     * @return string
+     * Route model binding
      */
     public function getRouteKeyName()
     {
@@ -94,9 +78,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
+     * JWT: get user ID stored in token
      */
     public function getJWTIdentifier()
     {
@@ -104,9 +86,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
+     * JWT: custom claims
      */
     public function getJWTCustomClaims()
     {
